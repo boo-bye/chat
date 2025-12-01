@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chat APP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial;
+            background: #f2f2f2;
+            display: flex;
+            flex-direction: column;
+        }
+        #messages {
+            flex: 1;
+            overflow-y: scroll;
+            background: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px;
+        }
+        .msg {
+            padding: 6px;
+            margin: 4px 0;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .msg.self {
+            background: #c8e6c9;
+            text-align: right;
+        }
+        .msg.friend {
+            background: #e7f1ff;
+            text-align: left;
+        }
+        input {
+            width: 70%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #aaa;
+            font-size: 16px;
+            -webkit-appearance: none;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        input[type="text"] {
+            -webkit-text-fill-color: #000;
+        }
+        button {
+            width: 25%;
+            padding: 10px;
+            margin-left: 1%;
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+<h2>💬 Hybrid Chat</h2>
+<p>输入你的用户ID：<input id="userid" type="text" inputmode="text" placeholder="User1"></p>
+
+<div id="messages"></div>
+
+<div id="controls">
+    <input id="text" type="text" inputmode="text" placeholder="输入消息...">
+    <button onclick="sendMessage()">发送</button>
+    <button onclick="getDevice()">设备</button>
+    <button onclick="requestPermissions()">权限</button>
+    <button onclick="sendAppNotification()">通知</button>
+</div>
+
+<script>
+    // WebSocket 连接服务器
+    let ws = new WebSocket("ws://10.0.2.2:8080");
+
+    ws.onopen = () => addMsg("🟢 已连接服务器", false);
+    ws.onmessage = (msg) => addMsg(msg.data, false);
+
+    function sendMessage() {
+        let text = document.getElementById("text").value;
+        if(text.trim() === "") return;
+
+        let id = document.getElementById("userid").value || "User";
+        let fullMsg = id + ": " + text;
+
+        ws.send(fullMsg);
+        addMsg(fullMsg, true); // 自己发的消息
+        document.getElementById("text").value = "";
+    }
+
+    function addMsg(text, isMe){
+        let box = document.getElementById("messages");
+        let div = document.createElement("div");
+        div.className = "msg " + (isMe ? "self" : "friend");
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function getDevice() {
+        if(Android && Android.getDeviceInfo) {
+            alert(Android.getDeviceInfo());
+        } else {
+            alert("无法获取设备信息");
+        }
+    }
+
+    // 请求麦克风和摄像头权限
+    function requestPermissions() {
+        if(Android) {
+            let micResult = Android.requestMicrophonePermission();
+            let cameraResult = Android.requestCameraPermission();
+            addMsg("🎤 麦克风: " + micResult, false);
+            addMsg("📹 摄像头: " + cameraResult, false);
+        } else {
+            alert("无法获取权限");
+        }
+    }
+
+    // 发送应用通知
+    function sendAppNotification() {
+        if(Android) {
+            Android.sendNotification("新消息", "你有一条新的聊天消息！");
+            addMsg("📢 已发送通知", false);
+        } else {
+            alert("无法发送通知");
+        }
+    }
+</script>
+
+</body>
+</html>
